@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Student Grade Management System</title>
+<style>
+body{font-family:Arial;background:#eef;padding:20px} .card{background:#fff;padding:20px;border-radius:10px;max-width:1200px;margin:auto}
+input,button{padding:8px;margin:4px} table{width:100%;border-collapse:collapse} th,td{border:1px solid #ccc;padding:8px} th{background:#0d6efd;color:#fff}
+</style></head><body>
+<div class="card">
+<h1>Advanced Student Grade Management System</h1>
+<input id="name" placeholder="Name"><input id="sid" placeholder="ID"><input id="dept" placeholder="Department">
+<input id="semester" placeholder="Semester"><input id="course" placeholder="Course">
+<input id="credit" type="number" placeholder="Credit"><input id="marks" type="number" placeholder="Marks">
+<button onclick="addRec()">Add</button>
+<input id="search" placeholder="Search" onkeyup="render()">
+<button onclick="window.print()">Print Transcript</button>
+<div>CGPA: <span id="cgpa">0.00</span></div>
+<table><thead><tr><th>Name</th><th>ID</th><th>Courses</th><th>GPA</th><th>Actions</th></tr></thead><tbody id="tb"></tbody></table>
+<pre id="trans"></pre></div>
+<script>
+let data=JSON.parse(localStorage.getItem('advsgms'))||[];
+const grade=m=>m>=90?['A',4]:m>=80?['B',3]:m>=70?['C',2]:m>=50?['D',1]:['F',0];
+const save=()=>localStorage.setItem('advsgms',JSON.stringify(data));
+function addRec(){
+let name=v('name'),sid=v('sid'),dept=v('dept'),semester=v('semester'),course=v('course');
+let credit=+v('credit'),marks=+v('marks'); if(!name||!sid||!course)return;
+let s=data.find(x=>x.sid==sid); if(!s){s={name,sid,dept,semester,courses:[]};data.push(s);}
+let g=grade(marks); s.courses.push({course,credit,marks,grade:g[0],point:g[1]}); save(); render();
+}
+function v(id){return document.getElementById(id).value}
+function gpa(s){let p=0,c=0; s.courses.forEach(x=>{p+=x.point*x.credit;c+=x.credit}); return c?(p/c).toFixed(2):'0.00'}
+function render(){
+let q=v('search').toLowerCase(),tb=document.getElementById('tb'); tb.innerHTML=''; let total=0;
+data.forEach((s,i)=>{if(s.name.toLowerCase().includes(q)||s.sid.toLowerCase().includes(q)){
+total+=+gpa(s);
+tb.innerHTML+=`<tr><td>${s.name}</td><td>${s.sid}</td><td>${s.courses.map(c=>c.course).join(', ')}</td><td>${gpa(s)}</td>
+<td><button onclick="showT(${i})">Transcript</button><button onclick="editS(${i})">Edit</button><button onclick="delS(${i})">Delete</button></td></tr>`;
+}});
+document.getElementById('cgpa').innerText=data.length?(total/data.length).toFixed(2):'0.00';
+}
+function editS(i){let n=prompt('Name',data[i].name); if(n) data[i].name=n; save(); render();}
+function delS(i){data.splice(i,1); save(); render();}
+function showT(i){
+let s=data[i],t=`UNIVERSITY TRANSCRIPT\n\nName:${s.name}\nID:${s.sid}\nDepartment:${s.dept}\nSemester:${s.semester}\n\n`;
+t+='Course | Credit | Marks | Grade\n--------------------------------\n';
+s.courses.forEach(c=>t+=`${c.course} | ${c.credit} | ${c.marks} | ${c.grade}\n`);
+t+=`\nGPA: ${gpa(s)}`; document.getElementById('trans').textContent=t;
+}
+render();
+</script></body></html>
