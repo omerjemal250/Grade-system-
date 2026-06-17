@@ -30,7 +30,7 @@ tr:hover { background: #f0f0f0; }
 .action-buttons button { padding: 6px 10px; font-size: 12px; min-width: auto; }
 .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto; }
 .modal.active { display: flex; align-items: center; justify-content: center; }
-.modal-content { background: white; padding: 30px; border-radius: 10px; max-width: 500px; width: 90%; margin: 20px; }
+.modal-content { background: white; padding: 30px; border-radius: 10px; max-width: 600px; width: 90%; margin: 20px; max-height: 90vh; overflow-y: auto; }
 .modal-header { font-size: 20px; font-weight: bold; margin-bottom: 20px; }
 .modal-buttons { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
 h1 { color: #333; margin-top: 0; }
@@ -40,6 +40,12 @@ h1 { color: #333; margin-top: 0; }
 .courses-table th { background: #e9ecef; font-weight: bold; }
 .courses-table button { padding: 4px 8px; font-size: 11px; }
 label { display: block; margin-bottom: 5px; font-weight: bold; }
+.semester-section { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #0d6efd; }
+.semester-header { font-size: 14px; font-weight: bold; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+.semester-gpa { background: #0d6efd; color: white; padding: 4px 10px; border-radius: 3px; font-size: 12px; }
+.tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; }
+.tab-button { background: none; border: none; padding: 10px 20px; cursor: pointer; border-bottom: 3px solid transparent; color: #666; }
+.tab-button.active { color: #0d6efd; border-bottom-color: #0d6efd; }
 </style></head><body>
 <div class="card">
 <h1>Advanced Student Grade Management System</h1>
@@ -48,7 +54,7 @@ label { display: block; margin-bottom: 5px; font-weight: bold; }
   <input id="name" placeholder="Student Name" required>
   <input id="sid" placeholder="Student ID" required>
   <input id="dept" placeholder="Department">
-  <input id="semester" placeholder="Semester">
+  <input id="semester" placeholder="Semester" required>
 </div>
 
 <div class="form-group">
@@ -83,7 +89,7 @@ label { display: block; margin-bottom: 5px; font-weight: bold; }
   </div>
 </div>
 
-<table><thead><tr><th>Name</th><th>ID</th><th>Department</th><th>Courses</th><th>GPA</th><th>Actions</th></tr></thead><tbody id="tb"></tbody></table>
+<table><thead><tr><th>Name</th><th>ID</th><th>Department</th><th>Courses</th><th>CGPA</th><th>Actions</th></tr></thead><tbody id="tb"></tbody></table>
 
 <div id="trans" class="hidden"></div>
 </div>
@@ -92,25 +98,27 @@ label { display: block; margin-bottom: 5px; font-weight: bold; }
 <div id="editStudentModal" class="modal">
   <div class="modal-content">
     <div class="modal-header">Edit Student</div>
-    <div class="form-group">
-      <label>Student Name:</label>
-      <input id="editStudentName" type="text">
+    
+    <div class="tabs">
+      <button class="tab-button active" onclick="switchTab('info')">Student Info</button>
+      <button class="tab-button" onclick="switchTab('semesters')">Semesters</button>
     </div>
-    <div class="form-group">
-      <label>Department:</label>
-      <input id="editStudentDept" type="text">
+    
+    <div id="infoTab">
+      <div class="form-group">
+        <label>Student Name:</label>
+        <input id="editStudentName" type="text">
+      </div>
+      <div class="form-group">
+        <label>Department:</label>
+        <input id="editStudentDept" type="text">
+      </div>
     </div>
-    <div class="form-group">
-      <label>Semester:</label>
-      <input id="editStudentSemester" type="text">
+    
+    <div id="semestersTab" class="hidden">
+      <div id="semestersList"></div>
     </div>
-    <div style="margin-top: 20px;">
-      <h4>Courses:</h4>
-      <table class="courses-table" id="coursesTable">
-        <thead><tr><th>Course Name</th><th>Credit</th><th>Marks</th><th>Grade</th><th>Actions</th></tr></thead>
-        <tbody id="coursesList"></tbody>
-      </table>
-    </div>
+    
     <div class="modal-buttons">
       <button onclick="closeEditStudentModal()" class="secondary">Cancel</button>
       <button onclick="saveStudentEdit()">Save</button>
@@ -157,12 +165,22 @@ label { display: block; margin-bottom: 5px; font-weight: bold; }
 let data = JSON.parse(localStorage.getItem('advsgms')) || [];
 let editingStudentIndex = null;
 let editingCourseIndex = null;
-let deletingType = null; // 'student' or 'course'
+let deletingType = null;
 let deletingStudentIndex = null;
 let deletingCourseIndex = null;
+let currentTab = 'info';
 
 const grade = m => m >= 90 ? ['A', 4] : m >= 80 ? ['B', 3] : m >= 70 ? ['C', 2] : m >= 50 ? ['D', 1] : ['F', 0];
 const save = () => localStorage.setItem('advsgms', JSON.stringify(data));
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('[id$="Tab"]').forEach(el => el.classList.add('hidden'));
+  
+  event.target.classList.add('active');
+  document.getElementById(tab + 'Tab').classList.remove('hidden');
+}
 
 function showMessage(msg, type = 'error') {
   const errorDiv = document.getElementById('error');
@@ -185,12 +203,14 @@ function validateInput() {
   const name = document.getElementById('name').value.trim();
   const sid = document.getElementById('sid').value.trim();
   const course = document.getElementById('course').value.trim();
+  const semester = document.getElementById('semester').value.trim();
   const credit = parseFloat(document.getElementById('credit').value);
   const marks = parseFloat(document.getElementById('marks').value);
   
   if (!name) { showMessage('Please enter student name'); return false; }
   if (!sid) { showMessage('Please enter student ID'); return false; }
   if (!course) { showMessage('Please enter course name'); return false; }
+  if (!semester) { showMessage('Please enter semester'); return false; }
   if (isNaN(credit) || credit < 0 || credit > 10) { showMessage('Credit hours must be between 0 and 10'); return false; }
   if (isNaN(marks) || marks < 0 || marks > 100) { showMessage('Marks must be between 0 and 100'); return false; }
   
@@ -211,40 +231,62 @@ function addRec() {
   let student = data.find(x => x.sid === sid);
   
   if (!student) {
-    student = { name, sid, dept, semester, courses: [] };
+    student = { name, sid, dept, semesters: {} };
     data.push(student);
   }
   
-  // Check for duplicate course
-  const existingCourse = student.courses.find(c => c.course.toLowerCase() === course.toLowerCase());
+  if (!student.semesters[semester]) {
+    student.semesters[semester] = [];
+  }
+  
+  const existingCourse = student.semesters[semester].find(c => c.course.toLowerCase() === course.toLowerCase());
   if (existingCourse) {
-    showMessage(`Course "${course}" already exists for this student`);
+    showMessage(`Course "${course}" already exists for ${semester}`);
     return;
   }
   
   const g = grade(marks);
-  student.courses.push({ course, credit, marks, grade: g[0], point: g[1] });
+  student.semesters[semester].push({ course, credit, marks, grade: g[0], point: g[1] });
   
   save();
   showMessage('Record added successfully', 'success');
   
-  // Clear inputs
   document.getElementById('name').value = '';
   document.getElementById('sid').value = '';
   document.getElementById('course').value = '';
   document.getElementById('credit').value = '';
   document.getElementById('marks').value = '';
+  document.getElementById('semester').value = '';
   
   render();
 }
 
-function gpa(student) {
+function calculateSemesterGPA(courses) {
   let points = 0, credits = 0;
-  student.courses.forEach(x => {
+  courses.forEach(x => {
     points += x.point * x.credit;
     credits += x.credit;
   });
   return credits ? (points / credits).toFixed(2) : '0.00';
+}
+
+function calculateCGPA(student) {
+  let totalPoints = 0, totalCredits = 0;
+  Object.values(student.semesters).forEach(courses => {
+    courses.forEach(course => {
+      totalPoints += course.point * course.credit;
+      totalCredits += course.credit;
+    });
+  });
+  return totalCredits ? (totalPoints / totalCredits).toFixed(2) : '0.00';
+}
+
+function getAllCourses(student) {
+  let courses = [];
+  Object.values(student.semesters).forEach(semCourses => {
+    courses = courses.concat(semCourses);
+  });
+  return courses;
 }
 
 function render() {
@@ -254,15 +296,17 @@ function render() {
   
   data.forEach((student, i) => {
     if (student.name.toLowerCase().includes(query) || student.sid.toLowerCase().includes(query)) {
-      const studentGPA = gpa(student);
-      const coursesStr = student.courses.map(c => c.course).join(', ');
+      const studentCGPA = calculateCGPA(student);
+      const allCourses = getAllCourses(student);
+      const coursesStr = allCourses.map(c => c.course).join(', ');
+      
       tb.innerHTML += `
         <tr>
           <td>${student.name}</td>
           <td>${student.sid}</td>
           <td>${student.dept}</td>
-          <td>${coursesStr}</td>
-          <td>${studentGPA}</td>
+          <td>${coursesStr || 'No courses'}</td>
+          <td>${studentCGPA}</td>
           <td>
             <div class="action-buttons">
               <button onclick="showTranscript(${i})">Transcript</button>
@@ -275,19 +319,20 @@ function render() {
     }
   });
   
-  // Calculate true CGPA
-  let allGPA = 0;
+  let allCGPA = 0;
   data.forEach(student => {
-    allGPA += parseFloat(gpa(student));
+    allCGPA += parseFloat(calculateCGPA(student));
   });
-  const trueCGPA = data.length ? (allGPA / data.length).toFixed(2) : '0.00';
+  const trueCGPA = data.length ? (allCGPA / data.length).toFixed(2) : '0.00';
   
   document.getElementById('cgpa').innerText = trueCGPA;
   document.getElementById('totalStudents').innerText = data.length;
   
   let allCoursesCount = 0;
   data.forEach(student => {
-    allCoursesCount += student.courses.length;
+    Object.values(student.semesters).forEach(courses => {
+      allCoursesCount += courses.length;
+    });
   });
   document.getElementById('totalCourses').innerText = allCoursesCount;
 }
@@ -298,26 +343,51 @@ function openEditStudentModal(i) {
   
   document.getElementById('editStudentName').value = student.name;
   document.getElementById('editStudentDept').value = student.dept;
-  document.getElementById('editStudentSemester').value = student.semester;
   
-  // Populate courses table
-  const coursesList = document.getElementById('coursesList');
-  coursesList.innerHTML = '';
+  const semestersList = document.getElementById('semestersList');
+  semestersList.innerHTML = '';
   
-  student.courses.forEach((course, idx) => {
-    coursesList.innerHTML += `
-      <tr>
-        <td>${course.course}</td>
-        <td>${course.credit}</td>
-        <td>${course.marks}</td>
-        <td>${course.grade}</td>
-        <td>
-          <button onclick="openEditCourseModal(${i}, ${idx})" class="secondary">Edit</button>
-          <button onclick="deleteCourse(${i}, ${idx})" class="danger">Delete</button>
-        </td>
-      </tr>
+  Object.keys(student.semesters).sort().forEach(semester => {
+    const courses = student.semesters[semester];
+    const semesterGPA = calculateSemesterGPA(courses);
+    
+    let coursesHTML = '<div class="courses-table" style="margin-top: 10px;">';
+    coursesHTML += '<table style="width: 100%; border-collapse: collapse;">';
+    coursesHTML += '<tr style="background: #e9ecef;"><th style="border: 1px solid #ddd; padding: 8px;">Course</th><th style="border: 1px solid #ddd; padding: 8px;">Credit</th><th style="border: 1px solid #ddd; padding: 8px;">Marks</th><th style="border: 1px solid #ddd; padding: 8px;">Grade</th><th style="border: 1px solid #ddd; padding: 8px;">Actions</th></tr>';
+    
+    courses.forEach((course, idx) => {
+      coursesHTML += `
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 8px;">${course.course}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${course.credit}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${course.marks}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${course.grade}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">
+            <button onclick="openEditCourseModal(${i}, '${semester}', ${idx})" class="secondary" style="padding: 4px 8px; font-size: 11px;">Edit</button>
+            <button onclick="deleteCourse(${i}, '${semester}', ${idx})" class="danger" style="padding: 4px 8px; font-size: 11px;">Delete</button>
+          </td>
+        </tr>
+      `;
+    });
+    
+    coursesHTML += '</table></div>';
+    
+    semestersList.innerHTML += `
+      <div class="semester-section">
+        <div class="semester-header">
+          <span>${semester}</span>
+          <span class="semester-gpa">GPA: ${semesterGPA}</span>
+        </div>
+        ${coursesHTML}
+      </div>
     `;
   });
+  
+  currentTab = 'info';
+  document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('[id$="Tab"]').forEach(el => el.classList.add('hidden'));
+  document.querySelector('.tab-button').classList.add('active');
+  document.getElementById('infoTab').classList.remove('hidden');
   
   document.getElementById('editStudentModal').classList.add('active');
 }
@@ -332,7 +402,6 @@ function saveStudentEdit() {
   
   const name = document.getElementById('editStudentName').value.trim();
   const dept = document.getElementById('editStudentDept').value.trim();
-  const semester = document.getElementById('editStudentSemester').value.trim();
   
   if (!name) {
     showMessage('Student name cannot be empty');
@@ -342,7 +411,6 @@ function saveStudentEdit() {
   const student = data[editingStudentIndex];
   student.name = name;
   student.dept = dept;
-  student.semester = semester;
   
   save();
   showMessage('Student information updated', 'success');
@@ -350,15 +418,16 @@ function saveStudentEdit() {
   render();
 }
 
-function openEditCourseModal(studentIdx, courseIdx) {
+function openEditCourseModal(studentIdx, semester, courseIdx) {
   editingStudentIndex = studentIdx;
   editingCourseIndex = courseIdx;
   
-  const course = data[studentIdx].courses[courseIdx];
+  const course = data[studentIdx].semesters[semester][courseIdx];
   document.getElementById('editCourse').value = course.course;
   document.getElementById('editCredit').value = course.credit;
   document.getElementById('editMarks').value = course.marks;
   
+  window.editingSemester = semester;
   document.getElementById('editCourseModal').classList.add('active');
 }
 
@@ -366,6 +435,7 @@ function closeEditCourseModal() {
   document.getElementById('editCourseModal').classList.remove('active');
   editingStudentIndex = null;
   editingCourseIndex = null;
+  window.editingSemester = null;
 }
 
 function saveCourseEdit() {
@@ -374,32 +444,27 @@ function saveCourseEdit() {
   const course = document.getElementById('editCourse').value.trim();
   const credit = parseFloat(document.getElementById('editCredit').value);
   const marks = parseFloat(document.getElementById('editMarks').value);
+  const semester = window.editingSemester;
   
   if (!course || isNaN(credit) || isNaN(marks)) {
     showMessage('Please fill all fields correctly');
     return;
   }
   
-  if (credit < 0 || credit > 10) {
-    showMessage('Credit hours must be between 0 and 10');
-    return;
-  }
-  
-  if (marks < 0 || marks > 100) {
-    showMessage('Marks must be between 0 and 100');
+  if (credit < 0 || credit > 10 || marks < 0 || marks > 100) {
+    showMessage('Invalid credit hours or marks');
     return;
   }
   
   const g = grade(marks);
-  const courseRecord = data[editingStudentIndex].courses[editingCourseIndex];
+  const courseRecord = data[editingStudentIndex].semesters[semester][editingCourseIndex];
   
-  // Check if course name changed - prevent duplicates
-  const isDuplicate = data[editingStudentIndex].courses.some((c, idx) => 
+  const isDuplicate = data[editingStudentIndex].semesters[semester].some((c, idx) => 
     idx !== editingCourseIndex && c.course.toLowerCase() === course.toLowerCase()
   );
   
   if (isDuplicate) {
-    showMessage(`Course "${course}" already exists for this student`);
+    showMessage(`Course "${course}" already exists for ${semester}`);
     return;
   }
   
@@ -415,12 +480,13 @@ function saveCourseEdit() {
   openEditStudentModal(editingStudentIndex);
 }
 
-function deleteCourse(studentIdx, courseIdx) {
+function deleteCourse(studentIdx, semester, courseIdx) {
   deletingType = 'course';
   deletingStudentIndex = studentIdx;
   deletingCourseIndex = courseIdx;
+  window.deletingSemester = semester;
   
-  const courseName = data[studentIdx].courses[courseIdx].course;
+  const courseName = data[studentIdx].semesters[semester][courseIdx].course;
   document.getElementById('deleteMessage').textContent = `Delete course "${courseName}"? This action cannot be undone.`;
   document.getElementById('deleteModal').classList.add('active');
 }
@@ -439,6 +505,7 @@ function closeDeleteModal() {
   deletingType = null;
   deletingStudentIndex = null;
   deletingCourseIndex = null;
+  window.deletingSemester = null;
 }
 
 function confirmDelete() {
@@ -450,8 +517,14 @@ function confirmDelete() {
     closeDeleteModal();
     render();
   } else if (deletingType === 'course' && deletingStudentIndex !== null && deletingCourseIndex !== null) {
-    const courseName = data[deletingStudentIndex].courses[deletingCourseIndex].course;
-    data[deletingStudentIndex].courses.splice(deletingCourseIndex, 1);
+    const semester = window.deletingSemester;
+    const courseName = data[deletingStudentIndex].semesters[semester][deletingCourseIndex].course;
+    data[deletingStudentIndex].semesters[semester].splice(deletingCourseIndex, 1);
+    
+    if (data[deletingStudentIndex].semesters[semester].length === 0) {
+      delete data[deletingStudentIndex].semesters[semester];
+    }
+    
     save();
     showMessage(`Course "${courseName}" deleted successfully`, 'success');
     closeDeleteModal();
@@ -461,29 +534,37 @@ function confirmDelete() {
 
 function showTranscript(i) {
   const student = data[i];
-  const g = gpa(student);
+  const cgpa = calculateCGPA(student);
   
-  let transcript = `${'='.repeat(60)}\n`;
+  let transcript = `${'='.repeat(70)}\n`;
   transcript += `UNIVERSITY TRANSCRIPT\n`;
-  transcript += `${'='.repeat(60)}\n\n`;
+  transcript += `${'='.repeat(70)}\n\n`;
   transcript += `Name:           ${student.name}\n`;
   transcript += `Student ID:     ${student.sid}\n`;
   transcript += `Department:     ${student.dept || 'N/A'}\n`;
-  transcript += `Semester:       ${student.semester || 'N/A'}\n`;
-  transcript += `\n${'='.repeat(60)}\n`;
-  transcript += `Course Record\n`;
-  transcript += `${'='.repeat(60)}\n\n`;
-  transcript += `Course Name                 | Credit | Marks | Grade\n`;
-  transcript += `${'-'.repeat(60)}\n`;
+  transcript += `\n${'='.repeat(70)}\n`;
   
-  student.courses.forEach(course => {
-    const coursePad = course.course.padEnd(27);
-    transcript += `${coursePad} | ${String(course.credit).padEnd(6)} | ${String(course.marks).padEnd(5)} | ${course.grade}\n`;
+  const semesters = Object.keys(student.semesters).sort();
+  semesters.forEach(semester => {
+    const courses = student.semesters[semester];
+    const semesterGPA = calculateSemesterGPA(courses);
+    
+    transcript += `\n${semester.toUpperCase()}\n`;
+    transcript += `${'-'.repeat(70)}\n`;
+    transcript += `Course Name                 | Credit | Marks | Grade\n`;
+    transcript += `${'-'.repeat(70)}\n`;
+    
+    courses.forEach(course => {
+      const coursePad = course.course.padEnd(27);
+      transcript += `${coursePad} | ${String(course.credit).padEnd(6)} | ${String(course.marks).padEnd(5)} | ${course.grade}\n`;
+    });
+    
+    transcript += `Semester GPA: ${semesterGPA}\n`;
   });
   
-  transcript += `\n${'='.repeat(60)}\n`;
-  transcript += `GPA: ${g}\n`;
-  transcript += `${'='.repeat(60)}\n`;
+  transcript += `\n${'='.repeat(70)}\n`;
+  transcript += `CUMULATIVE GPA: ${cgpa}\n`;
+  transcript += `${'='.repeat(70)}\n`;
   transcript += `\nGenerated on: ${new Date().toLocaleString()}\n`;
   
   document.getElementById('trans').textContent = transcript;
@@ -531,7 +612,7 @@ function importData() {
         }
         
         const isValid = importedData.every(item => 
-          item.name && item.sid && Array.isArray(item.courses)
+          item.name && item.sid && (item.semesters || item.courses)
         );
         
         if (!isValid) {
@@ -554,6 +635,5 @@ function importData() {
   input.click();
 }
 
-// Initial render
 render();
 </script></body></html>
