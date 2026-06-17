@@ -5,22 +5,26 @@ A comprehensive, browser-based student grade management system with no login req
 ## 🎯 Features
 
 ### Core Functionality
-- **Add Student Records** - Register students with name, ID, department, and semester
-- **Course Management** - Add courses with credit hours and marks for each student
+- **Add Student Records** - Register students with name, ID, and department
+- **Semester-based Course Management** - Organize courses by semester
 - **GPA Calculation** - Automatic GPA calculation using weighted grade points
-- **CGPA Tracking** - Real-time cumulative GPA across all students
-- **Transcript Generation** - Professional-looking university transcripts
+- **Semester-wise GPA** - Track GPA for each semester independently
+- **CGPA Tracking** - Real-time cumulative GPA across all semesters
+- **Transcript Generation** - Professional university transcripts with semester breakdown
 - **Search Functionality** - Filter students by name or ID
+- **Edit Capabilities** - Edit student info, course details, and semester records
 
 ### Advanced Features
 - ✅ **Input Validation** - Comprehensive validation for all fields
-- ✅ **Duplicate Prevention** - Prevents adding the same course twice
+- ✅ **Duplicate Prevention** - Prevents adding the same course twice per semester
 - ✅ **Delete Confirmation** - Safety modal before deleting records
 - ✅ **Data Export** - Download all records as JSON for backup
 - ✅ **Data Import** - Restore records from JSON backup files
 - ✅ **Error Messages** - Clear, user-friendly notifications
 - ✅ **Print Support** - Print transcripts directly from the browser
 - ✅ **Statistics Dashboard** - Overview of overall CGPA, student count, and total courses
+- ✅ **Course Editing** - Edit individual course records by semester
+- ✅ **Semester Organization** - Courses grouped by semester for better tracking
 
 ## 📊 Grading Scale
 
@@ -39,28 +43,43 @@ A comprehensive, browser-based student grade management system with no login req
 1. **Open the Application**
    - Download the HTML file or access it through your browser
    - No installation or server setup required
+   - Works offline with browser storage
 
 2. **Add Student Information**
    - Enter Student Name (required)
    - Enter Student ID (required)
    - Enter Department (optional)
-   - Enter Semester (optional)
+   - Enter Semester (required) - e.g., "Fall 2024", "Spring 2025"
 
 3. **Add Course Records**
+   - Select a semester for the course
    - Enter Course Name (required)
    - Enter Credit Hours (0-10)
    - Enter Marks (0-100)
    - Click "Add Record"
 
 4. **View Student Data**
-   - All students appear in the table below
+   - All students appear in the main table
    - Search by name or ID to filter results
-   - See individual GPA for each student
+   - See overall CGPA for each student
+   - View total courses per student
 
-5. **Generate Transcripts**
+5. **Edit Student Information**
+   - Click "Edit" button next to a student
+   - Two tabs available:
+     - **Student Info**: Edit name and department
+     - **Semesters**: View all semesters with courses and GPA
+   - Edit individual courses or delete them
+   - Each semester shows its own GPA
+
+6. **Generate Transcripts**
    - Click "Transcript" button for any student
-   - View formatted university transcript
-   - Click "Print" to print the transcript
+   - View professional formatted transcript with:
+     - Student details
+     - All semesters and courses
+     - Semester-wise GPA
+     - Overall CGPA
+   - Use browser print feature for PDF export
 
 ### Data Management
 
@@ -69,35 +88,39 @@ A comprehensive, browser-based student grade management system with no login req
 - JSON file downloads automatically
 - Filename: `grade-system-backup-YYYY-MM-DD.json`
 - Keep as backup of your records
+- Useful for data migration and security
 
 #### Import Data
 - Click "Import" button
 - Select a previously exported JSON file
 - System validates the file structure
 - Confirm to restore all data
+- Replaces existing data
 
 #### Delete Records
-- Click "Delete" button next to a student
-- Confirm deletion in the modal dialog
+- **Delete Student**: Click "Delete" button, confirm in modal
+- **Delete Course**: Open student editor → semester tab → delete course
+- Both require confirmation
 - Record is permanently removed
 
 ## 🎓 Calculation Methods
 
-### GPA Calculation
+### Semester GPA Calculation
 ```
-GPA = (Sum of (Grade Point × Credit Hours)) / (Sum of Credit Hours)
+Semester GPA = (Sum of (Grade Point × Credit Hours)) / (Sum of Credit Hours)
 ```
 
-**Example:**
+**Example (Fall 2024):**
 - Math: Grade A (4.0) × 4 credits = 16.0
 - Physics: Grade B (3.0) × 3 credits = 9.0
 - English: Grade C (2.0) × 2 credits = 4.0
 - Total: (16.0 + 9.0 + 4.0) / (4 + 3 + 2) = 29.0 / 9 = **3.22 GPA**
 
-### CGPA Calculation
+### CGPA (Cumulative GPA) Calculation
 ```
-CGPA = Average of all student GPAs
+CGPA = (Sum of all (Grade Point × Credit Hours)) / (Sum of all Credit Hours)
 ```
+Averages all semester GPAs weighted by credits
 
 ## 💾 Data Storage
 
@@ -105,6 +128,7 @@ CGPA = Average of all student GPAs
 - **Data Format**: JSON
 - **Persistence**: Data persists until browser cache is cleared
 - **Backup**: Use Export feature regularly to backup data
+- **Capacity**: Can store hundreds of student records
 
 ### Data Structure
 ```json
@@ -113,16 +137,33 @@ CGPA = Average of all student GPAs
     "name": "John Doe",
     "sid": "STU001",
     "dept": "Computer Science",
-    "semester": "Fall 2024",
-    "courses": [
-      {
-        "course": "Data Structures",
-        "credit": 3,
-        "marks": 85,
-        "grade": "B",
-        "point": 3.0
-      }
-    ]
+    "semesters": {
+      "Fall 2024": [
+        {
+          "course": "Data Structures",
+          "credit": 3,
+          "marks": 85,
+          "grade": "B",
+          "point": 3.0
+        },
+        {
+          "course": "Algorithms",
+          "credit": 4,
+          "marks": 92,
+          "grade": "A",
+          "point": 4.0
+        }
+      ],
+      "Spring 2025": [
+        {
+          "course": "Database Systems",
+          "credit": 3,
+          "marks": 88,
+          "grade": "B",
+          "point": 3.0
+        }
+      ]
+    }
   }
 ]
 ```
@@ -133,9 +174,10 @@ The system validates:
 - ✓ Student name is not empty
 - ✓ Student ID is not empty
 - ✓ Course name is not empty
+- ✓ Semester is selected/entered
 - ✓ Credit hours are between 0-10
 - ✓ Marks are between 0-100
-- ✓ No duplicate courses for the same student
+- ✓ No duplicate courses in the same semester
 - ✓ Imported JSON has valid structure
 
 ## 🌐 Browser Compatibility
@@ -154,82 +196,130 @@ Works on all modern browsers that support:
 
 ## 📝 Tips & Best Practices
 
-1. **Regular Backups**
+1. **Semester Naming**
+   - Use consistent format: "Fall 2024", "Spring 2025", "Summer 2025"
+   - Makes transcript organization clearer
+   - Helps with sorting and searching
+
+2. **Regular Backups**
    - Export data monthly using the Export button
    - Store backups in a safe location
+   - Keep multiple backup versions
 
-2. **Data Entry**
-   - Use consistent student ID format
-   - Include semester information for better tracking
+3. **Data Entry**
+   - Use consistent student ID format (e.g., STU001, STU002)
+   - Include semester information for tracking
    - Enter marks as whole numbers (0-100)
+   - Use clear, standard course names
 
-3. **Credit Hours**
+4. **Credit Hours**
    - Typically range from 1-4 per course
-   - Sum of credits varies by student workload
+   - Total credits per semester varies by student workload
+   - Used in GPA calculation with weighted average
 
-4. **Printing**
+5. **Printing**
    - Use "Print Transcript" button for official documents
    - Ensure your printer has sufficient paper
-   - Save as PDF for digital records
+   - Save as PDF for digital records using Ctrl+P or Cmd+P
 
 ## 🆘 Troubleshooting
 
 ### Data Lost After Browser Clear
 - **Solution**: Import from your backup JSON file using the Import button
-- **Prevention**: Export data regularly
+- **Prevention**: Export data regularly (weekly or monthly)
 
 ### Search Not Working
 - **Solution**: Ensure you're typing the exact name or ID
-- **Note**: Search is case-insensitive
+- **Note**: Search is case-insensitive but requires substring match
+
+### Duplicate Course Error
+- **Solution**: Check that course name matches exactly (case-insensitive)
+- **Note**: Each course can only be added once per semester per student
 
 ### Marks Not Updating
-- **Solution**: Check that you're not adding a duplicate course
-- **Note**: Each course can only be added once per student
+- **Solution**: Close editor and reopen to see changes
+- **Note**: Click Save after making edits in the student editor
 
 ### Import Fails
 - **Solution**: Ensure the JSON file is from an export
-- **Check**: Verify file contains valid student data structure
+- **Check**: Verify file contains valid student data structure with semesters
 
-## 📊 Statistics
+### Semester GPA Shows 0.00
+- **Possible Cause**: All courses in that semester might have been deleted
+- **Solution**: Delete empty semester or add courses to it
 
-The dashboard displays:
-- **Overall CGPA** - Average GPA of all students
+## 📊 Statistics Dashboard
+
+The dashboard displays (at the top):
+- **Overall CGPA** - Average CGPA of all students
 - **Total Students** - Count of all registered students
-- **Total Courses** - Sum of all course records
+- **Total Courses** - Sum of all course records across all semesters
 
 ## 🔒 Privacy & Security
 
 - All data stored locally in your browser
 - No data sent to any server
 - No account creation required
-- No personal information collected
+- No personal information collected externally
+- Data encrypted only in browser's LocalStorage
 
 ## 📄 Transcript Format
 
 Generated transcripts include:
-- Student name and ID
-- Department and semester
-- Complete course record with marks
-- Individual course grades
-- Student GPA
-- Generation timestamp
+- Student name, ID, and department
+- Organized by semester
+- For each semester:
+  - All courses with marks and grades
+  - Semester GPA
+- Overall cumulative GPA
+- Generation timestamp for verification
+
+Example transcript layout:
+```
+======================================================================
+UNIVERSITY TRANSCRIPT
+======================================================================
+
+Name:           John Doe
+Student ID:     STU001
+Department:     Computer Science
+
+======================================================================
+FALL 2024
+----------------------------------------------------------------------
+Data Structures              | 3      | 85    | B
+Algorithms                   | 4      | 92    | A
+Semester GPA: 3.57
+
+SPRING 2025
+----------------------------------------------------------------------
+Database Systems             | 3      | 88    | B
+Web Development              | 3      | 90    | A
+Semester GPA: 3.67
+
+======================================================================
+CUMULATIVE GPA: 3.62
+======================================================================
+```
 
 ## 🎯 Future Enhancements
 
 Potential features for future versions:
-- Edit individual course records
-- Multiple grading scale options
-- Semester-wise GPA breakdown
-- Class statistics and analytics
-- Dark mode theme
-- Mobile app version
+- Dark mode theme toggle
+- Statistics dashboard with charts
+- Multiple grading scale options (4.0, 5.0, etc.)
+- Class average analytics
+- Grade distribution visualization
+- Mobile responsive improvements
 - Cloud storage integration
+- Student performance predictions
 
 ## 💡 Contributing
 
 Found a bug or have a suggestion? 
 - Report issues on GitHub
 - Submit pull requests with improvements
+- Share feedback for new features
 
 ## 📧 Support
 
@@ -237,6 +327,7 @@ For questions or issues:
 1. Check the Troubleshooting section
 2. Review the How to Use section
 3. Export your data as backup before major changes
+4. Verify browser compatibility
 
 ## 📄 License
 
@@ -244,8 +335,15 @@ This project is open source and available for educational use.
 
 ---
 
-**Version**: 2.0  
+**Version**: 3.0 (Semester-wise GPA Tracking)  
 **Last Updated**: June 2026  
 **Created by**: Omer Jemal
+
+### Recent Updates
+- ✅ Added semester-wise GPA tracking
+- ✅ Restructured data with semester organization
+- ✅ Enhanced student editor with tabs
+- ✅ Improved transcript formatting
+- ✅ Added course editing by semester
 
 For the latest version and updates, visit: [GitHub Repository](https://github.com/omerjemal250/Grade-system-)
